@@ -7,6 +7,8 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <math.h>
+#include <string.h>
+
 
 //riprendere l'esercizio https://github.com/marcotessarotto/esercizio-C-2020-03-30/
 //calcolare fibonacci_array(39) e scrivere i valori dell'array in formato testo in un file chiamato fibonacci.txt
@@ -18,40 +20,40 @@
 
 
 unsigned long fibonacci(unsigned int n);
-int min_string_len(int number);
-char * itoa_printf(int number);
+int min_string_len(unsigned long number);
+char * itoa_printf(unsigned long number);
 
 
 int main(int argc, char *argv[]) {
-	char * text_to_write;
-	int text_to_write_len;
 	unsigned int n = 39;
-	int result = fibonacci(n);
-	printf("\nThe item (%u) of the Fibonacci's series is: %lu\n\n", n, result);
 
-	char * file_name = "/home/utente/prova.txt";
-	printf("Leggo il file %s\n", file_name);
+	char * file_name = "test.txt";
+	printf("Leggo il file: %s\n", file_name);
 
-	int fd = open(file_name, O_CREAT | O_TRUNC | O_WRONLY);
+	int fd = open(file_name, O_CREAT | O_TRUNC | O_WRONLY, S_IRUSR | S_IWUSR);
 	if (fd == -1) {
 		perror("open()");
 		exit(EXIT_FAILURE);
 	}
 	else {
-		printf("open() ok\n");
+		printf("System call open() andata a buon fine!\n");
 	}
 
-	text_to_write = itoa_printf(result);
-	text_to_write_len = strlen(text_to_write) + 1;
+	for(int i=0; i<=n; i++){
+		char * text_to_write = itoa_printf(fibonacci(i));
+		int text_to_write_len = strlen(text_to_write);
+		char * text = malloc((text_to_write_len+1)*sizeof(char));
+		text = strcat(text_to_write, "\n");
 
-	printf("scrivo %d bytes\n", text_to_write_len);
+		int res = write(fd, text, text_to_write_len+1);
 
-	int res = write(fd, text_to_write, text_to_write_len);
-
-	if (res == -1) {
-		perror("write()");
-		exit(EXIT_FAILURE);
+		if (res == -1) {
+			perror("write()");
+			exit(EXIT_FAILURE);
+		}
 	}
+
+	printf("Scrittura su file andata a buon fine, chiusura del file...");
 
 	if (close(fd) == -1) {
 		perror("close");
@@ -86,22 +88,24 @@ unsigned long fibonacci(unsigned int n) {
 	return result;
 }
 
-int min_string_len(int number) {
-	int res =  (int)( ceil( log10( labs(number) )) + 1 ) * sizeof(char);
-	if (number < 0){
-		res++;
+
+int min_string_len(unsigned long number) {
+	int digits = 1;
+	while (number != 0){
+		number /= 10;
+		digits++;
 	}
 
-	return res;
+	return digits;
 }
 
 
-char * itoa_printf(int number) {
+char * itoa_printf(unsigned long number) {
 	char * result;
 
-	printf("minimum string len: %d\n",min_string_len(number));
-	result = calloc(12, sizeof(char));
-	snprintf(result, 12, "%d", number);
+	int digits = min_string_len(number);
+	result = calloc(digits, sizeof(char));
+	snprintf(result, digits, "%lu", number);
 
 	return result;
 }
